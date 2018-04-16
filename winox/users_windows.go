@@ -28,7 +28,7 @@ func GetFolderPath(folderType FolderType) (string, error) {
 	case FolderTypeLocalAppData:
 		csidl = syscallex.CSIDL_LOCAL_APPDATA
 	default:
-		return "", errors.Errorf("Unknown folder type: %s", folderType)
+		return "", errors.Errorf("Unknown folder type: %d", folderType)
 	}
 	csidl |= syscallex.CSIDL_FLAG_CREATE
 
