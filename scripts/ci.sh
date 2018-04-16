@@ -9,7 +9,7 @@ export PKG=github.com/itchio/ox
 export PATH=$PATH:$GOPATH/bin
 
 mkdir -p $GOPATH/src/$PKG
-rsync -a --exclude 'src' . $GOPATH/src/$PKG
+rsync -a --exclude 'gopath' . $GOPATH/src/$PKG
 
 go get -v -d -t $PKG/...
 
