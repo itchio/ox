@@ -19,6 +19,12 @@ func Test_GetLibraryPath(t *testing.T) {
 	assert.NotEmpty(t, s)
 }
 
+func Test_GetHomeDirectory(t *testing.T) {
+	s, err := macox.GetHomeDirectory()
+	assert.NoError(t, err)
+	assert.NotEmpty(t, s)
+}
+
 func Test_GetApplicationSupportPath(t *testing.T) {
 	s, err := macox.GetApplicationSupportPath()
 	assert.NoError(t, err)
