@@ -15,6 +15,7 @@ var (
 	procSetForegroundWindow      = moduser32.NewProc("SetForegroundWindow")
 	procShowWindow               = moduser32.NewProc("ShowWindow")
 	procIsWindowVisible          = moduser32.NewProc("IsWindowVisible")
+	procSwitchToThisWindow       = moduser32.NewProc("SwitchToThisWindow")
 )
 
 func EnumWindows(
@@ -105,4 +106,22 @@ func IsWindowVisible(
 	)
 
 	return ret != 0
+}
+
+func SwitchToThisWindow(
+	hwnd syscall.Handle,
+	altTab bool,
+) {
+	altTabInt := 0
+	if altTab {
+		altTabInt = 1
+	}
+
+	syscall.Syscall(
+		procSwitchToThisWindow.Addr(),
+		2,
+		uintptr(hwnd),
+		uintptr(altTabInt),
+		0,
+	)
 }
