@@ -15,23 +15,6 @@ var (
 	procSetForegroundWindow      = moduser32.NewProc("SetForegroundWindow")
 	procShowWindow               = moduser32.NewProc("ShowWindow")
 	procIsWindowVisible          = moduser32.NewProc("IsWindowVisible")
-	procGetWindowLongPtr         = moduser32.NewProc("GetWindowLongPtr")
-)
-
-// GetWindowLong and GetWindowLongPtr constants
-const (
-	GWL_EXSTYLE     = -20
-	GWL_STYLE       = -16
-	GWL_WNDPROC     = -4
-	GWLP_WNDPROC    = -4
-	GWL_HINSTANCE   = -6
-	GWLP_HINSTANCE  = -6
-	GWL_HWNDPARENT  = -8
-	GWLP_HWNDPARENT = -8
-	GWL_ID          = -12
-	GWLP_ID         = -12
-	GWL_USERDATA    = -21
-	GWLP_USERDATA   = -21
 )
 
 func EnumWindows(
@@ -114,7 +97,7 @@ func IsWindowVisible(
 	hwnd syscall.Handle,
 ) bool {
 	ret, _, _ := syscall.Syscall(
-		procGetWindowLongPtr.Addr(),
+		procIsWindowVisible.Addr(),
 		1,
 		uintptr(hwnd),
 		0,
@@ -122,19 +105,4 @@ func IsWindowVisible(
 	)
 
 	return ret != 0
-}
-
-func GetWindowLongPtr(
-	hwnd syscall.Handle,
-	index int32,
-) uintptr {
-	ret, _, _ := syscall.Syscall(
-		procGetWindowLongPtr.Addr(),
-		2,
-		uintptr(hwnd),
-		uintptr(index),
-		0,
-	)
-
-	return ret
 }
