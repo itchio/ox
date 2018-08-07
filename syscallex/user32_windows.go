@@ -13,6 +13,7 @@ var (
 	procEnumWindows              = moduser32.NewProc("EnumWindows")
 	procGetWindowThreadProcessId = moduser32.NewProc("GetWindowThreadProcessId")
 	procSetForegroundWindow      = moduser32.NewProc("SetForegroundWindow")
+	procShowWindow               = moduser32.NewProc("ShowWindow")
 )
 
 func EnumWindows(
@@ -58,6 +59,27 @@ func SetForegroundWindow(
 		1,
 		uintptr(hwnd),
 		0,
+		0,
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func ShowWindow(
+	hwnd syscall.Handle,
+	flags int,
+) (err error) {
+	r1, _, e1 := syscall.Syscall(
+		procShowWindow.Addr(),
+		1,
+		uintptr(hwnd),
+		uintptr(flags),
 		0,
 	)
 	if r1 == 0 {
