@@ -77,7 +77,7 @@ func ShowWindow(
 ) (err error) {
 	r1, _, e1 := syscall.Syscall(
 		procShowWindow.Addr(),
-		1,
+		2,
 		uintptr(hwnd),
 		uintptr(flags),
 		0,
