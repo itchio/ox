@@ -59,7 +59,7 @@ var (
 	procMapGenericMask            = modadvapi32.NewProc("MapGenericMask")
 
 	procLookupPrivilegeValueW = modadvapi32.NewProc("LookupPrivilegeValueW")
-	procAdjustTokenPrivileges        = modadvapi32.NewProc("AdjustTokenPrivileges")
+	procAdjustTokenPrivileges = modadvapi32.NewProc("AdjustTokenPrivileges")
 )
 
 func CreateProcessWithLogon(
@@ -707,7 +707,6 @@ func AdjustTokenPrivileges(token syscall.Token, disableAllPrivileges bool, newst
 	}
 	return
 }
-
 
 type LUID struct {
 	LowPart  uint32
