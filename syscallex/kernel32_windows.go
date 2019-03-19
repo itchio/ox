@@ -1,10 +1,42 @@
 package syscallex
 
 import (
+	"runtime"
 	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
+)
+
+var (
+	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
+
+	procCreateJobObject           = modkernel32.NewProc("CreateJobObjectW")
+	procSetInformationJobObject   = modkernel32.NewProc("SetInformationJobObject")
+	procQueryInformationJobObject = modkernel32.NewProc("QueryInformationJobObject")
+	procAssignProcessToJobObject  = modkernel32.NewProc("AssignProcessToJobObject")
+
+	procGetCurrentThread    = modkernel32.NewProc("GetCurrentThread")
+	procOpenThreadToken     = modkernel32.NewProc("OpenThreadToken")
+	procGetDiskFreeSpaceExW = modkernel32.NewProc("GetDiskFreeSpaceExW")
+
+	procOpenThread    = modkernel32.NewProc("OpenThread")
+	procSuspendThread = modkernel32.NewProc("SuspendThread")
+	procResumeThread  = modkernel32.NewProc("ResumeThread")
+	procThread32First = modkernel32.NewProc("Thread32First")
+	procThread32Next  = modkernel32.NewProc("Thread32Next")
+
+	procCreateToolhelp32Snapshot = modkernel32.NewProc("CreateToolhelp32Snapshot")
+	procProcess32FirstW          = modkernel32.NewProc("Process32FirstW")
+	procProcess32NextW           = modkernel32.NewProc("Process32NextW")
+
+	procQueryFullProcessImageNameW = modkernel32.NewProc("QueryFullProcessImageNameW")
+
+	procVirtualAllocEx     = modkernel32.NewProc("VirtualAllocEx")
+	procWriteProcessMemory = modkernel32.NewProc("WriteProcessMemory")
+	procCreateRemoteThread = modkernel32.NewProc("CreateRemoteThread")
+	procVirtualFreeEx      = modkernel32.NewProc("VirtualFreeEx")
+	procGetExitCodeThread  = modkernel32.NewProc("GetExitCodeThread")
 )
 
 // JobObjectInfoClass
@@ -70,30 +102,6 @@ type ProcessEntry32 struct {
 	Flags             uint32
 	ExeFile           [MAX_PATH]uint16
 }
-
-var (
-	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
-
-	procCreateJobObject           = modkernel32.NewProc("CreateJobObjectW")
-	procSetInformationJobObject   = modkernel32.NewProc("SetInformationJobObject")
-	procQueryInformationJobObject = modkernel32.NewProc("QueryInformationJobObject")
-	procAssignProcessToJobObject  = modkernel32.NewProc("AssignProcessToJobObject")
-
-	procGetCurrentThread    = modkernel32.NewProc("GetCurrentThread")
-	procOpenThreadToken     = modkernel32.NewProc("OpenThreadToken")
-	procGetDiskFreeSpaceExW = modkernel32.NewProc("GetDiskFreeSpaceExW")
-
-	procOpenThread    = modkernel32.NewProc("OpenThread")
-	procResumeThread  = modkernel32.NewProc("ResumeThread")
-	procThread32First = modkernel32.NewProc("Thread32First")
-	procThread32Next  = modkernel32.NewProc("Thread32Next")
-
-	procCreateToolhelp32Snapshot = modkernel32.NewProc("CreateToolhelp32Snapshot")
-	procProcess32FirstW          = modkernel32.NewProc("Process32FirstW")
-	procProcess32NextW           = modkernel32.NewProc("Process32NextW")
-
-	procQueryFullProcessImageNameW = modkernel32.NewProc("QueryFullProcessImageNameW")
-)
 
 func CreateJobObject(
 	jobAttributes *syscall.SecurityAttributes,
@@ -285,6 +293,30 @@ func OpenThread(
 	return
 }
 
+func SuspendThread(
+	thread syscall.Handle,
+) (retCount uint32, err error) {
+	r1, _, e1 := syscall.Syscall(
+		procSuspendThread.Addr(),
+		1,
+		uintptr(thread),
+		0,
+		0,
+	)
+
+	minusOne := int(-1)
+	if r1 == uintptr(minusOne) {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	} else {
+		retCount = uint32(r1)
+	}
+	return
+}
+
 func ResumeThread(
 	thread syscall.Handle,
 ) (retCount uint32, err error) {
@@ -441,6 +473,129 @@ func QueryFullProcessImageName(
 	}
 	if err == nil {
 		s = syscall.UTF16ToString(buffer[:bufferSize])
+	}
+	return
+}
+
+const (
+	MEM_COMMIT     = 0x00001000
+	MEM_RESERVE    = 0x00002000
+	PAGE_READWRITE = 0x04
+)
+
+func VirtualAllocEx(
+	process syscall.Handle,
+	address uintptr,
+	size uintptr,
+	allocationType uint32,
+	protect uint32,
+) (res uintptr, err error) {
+	r1, _, e1 := syscall.Syscall6(
+		procVirtualAllocEx.Addr(),
+		5,
+		uintptr(process),
+		address,
+		uintptr(size),
+		uintptr(allocationType),
+		uintptr(protect),
+		0,
+	)
+	res = uintptr(r1)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func WriteProcessMemory(process syscall.Handle, addr uintptr, buf unsafe.Pointer, size uint32) (nLength uint32, err error) {
+	r1, _, e1 := syscall.Syscall6(
+		procWriteProcessMemory.Addr(),
+		5,
+		uintptr(process),
+		addr,
+		uintptr(buf),
+		uintptr(size),
+		uintptr(unsafe.Pointer(&nLength)),
+		0,
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func CreateRemoteThread(process syscall.Handle, sa *syscall.SecurityAttributes, stackSize uint32, startAddress,
+	parameter uintptr, creationFlags uint32) (ret syscall.Handle, threadId uint32, err error) {
+	r1, _, e1 := syscall.Syscall9(
+		procCreateRemoteThread.Addr(),
+		7,
+		uintptr(process),
+		uintptr(unsafe.Pointer(sa)),
+		uintptr(stackSize),
+		startAddress,
+		parameter,
+		uintptr(creationFlags),
+		uintptr(unsafe.Pointer(&threadId)),
+		0, 0,
+	)
+	runtime.KeepAlive(sa)
+	ret = syscall.Handle(r1)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+const (
+	MEM_RELEASE = 0x8000
+)
+
+func VirtualFreeEx(process syscall.Handle, addr uintptr, size, freeType uint32) (err error) {
+	r1, _, e1 := syscall.Syscall6(
+		procVirtualFreeEx.Addr(),
+		4,
+		uintptr(process),
+		addr,
+		uintptr(size),
+		uintptr(freeType),
+		0, 0,
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func GetExitCodeThread(thread syscall.Handle) (exitCode uint32, err error) {
+	r1, _, e1 := syscall.Syscall(
+		procGetExitCodeThread.Addr(),
+		2,
+		uintptr(thread),
+		uintptr(unsafe.Pointer(&exitCode)),
+		0,
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
 	}
 	return
 }

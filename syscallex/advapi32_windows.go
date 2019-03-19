@@ -57,6 +57,9 @@ var (
 	procSetFileSecurityW          = modadvapi32.NewProc("SetFileSecurityW")
 	procAccessCheck               = modadvapi32.NewProc("AccessCheck")
 	procMapGenericMask            = modadvapi32.NewProc("MapGenericMask")
+
+	procLookupPrivilegeValueW = modadvapi32.NewProc("LookupPrivilegeValueW")
+	procAdjustTokenPrivileges        = modadvapi32.NewProc("AdjustTokenPrivileges")
 )
 
 func CreateProcessWithLogon(
@@ -667,3 +670,65 @@ func MapGenericMask(
 		0,
 	)
 }
+
+func LookupPrivilegeValue(systemname *uint16, name *uint16, luid *LUID) (err error) {
+	r1, _, e1 := syscall.Syscall(
+		procLookupPrivilegeValueW.Addr(),
+		3,
+		uintptr(unsafe.Pointer(systemname)),
+		uintptr(unsafe.Pointer(name)),
+		uintptr(unsafe.Pointer(luid)),
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func AdjustTokenPrivileges(token syscall.Token, disableAllPrivileges bool, newstate *TOKEN_PRIVILEGES, buflen uint32, prevstate *TOKEN_PRIVILEGES, returnlen *uint32) (ret uint32, err error) {
+	var _p0 uint32
+	if disableAllPrivileges {
+		_p0 = 1
+	} else {
+		_p0 = 0
+	}
+	r0, _, e1 := syscall.Syscall6(procAdjustTokenPrivileges.Addr(), 6, uintptr(token), uintptr(_p0), uintptr(unsafe.Pointer(newstate)), uintptr(buflen), uintptr(unsafe.Pointer(prevstate)), uintptr(unsafe.Pointer(returnlen)))
+	ret = uint32(r0)
+	if true {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+
+type LUID struct {
+	LowPart  uint32
+	HighPart int32
+}
+
+type LUID_AND_ATTRIBUTES struct {
+	Luid       LUID
+	Attributes uint32
+}
+
+type TOKEN_PRIVILEGES struct {
+	PrivilegeCount uint32
+	Privileges     [1]LUID_AND_ATTRIBUTES
+}
+
+const (
+	TOKEN_ADJUST_PRIVILEGES = 0x0020
+	SE_PRIVILEGE_ENABLED    = 0x00000002
+)
+
+var (
+	SE_DEBUG_NAME = syscall.StringToUTF16Ptr("SeAuditPrivilege")
+)
