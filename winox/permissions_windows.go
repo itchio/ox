@@ -9,7 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/itchio/ox/syscallex"
-	"github.com/itchio/wharf/state"
+	"github.com/itchio/headway/state"
 	"github.com/pkg/errors"
 )
 
