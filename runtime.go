@@ -76,6 +76,10 @@ func (r *Runtime) Arch() string {
 	return "386"
 }
 
+func (r *Runtime) Equals(other *Runtime) bool {
+	return r.Is64 == other.Is64 && r.Platform == other.Platform
+}
+
 var cachedRuntime *Runtime
 
 func CurrentRuntime() *Runtime {
