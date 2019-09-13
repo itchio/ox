@@ -24,6 +24,17 @@ type Runtime struct {
 	Is64     bool     `json:"is64"`
 }
 
+type Runtimes []*Runtime
+
+func (rs Runtimes) HasPlatform(platform Platform) bool {
+	for _, r := range rs {
+		if r.Platform == platform {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Runtime) String() string {
 	var arch string
 	if r.Is64 {
