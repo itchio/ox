@@ -27,4 +27,6 @@ func Preallocate(f *os.File, size int64) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	return nil
 }
