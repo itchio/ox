@@ -8,7 +8,7 @@ import (
 )
 
 func Test_GetExecutablePath(t *testing.T) {
-	s, err := macox.GetExecutablePath("/Applications/TextEdit.app")
+	s, err := macox.GetExecutablePath("/Applications/Safari.app")
 	assert.NoError(t, err)
 	assert.NotEmpty(t, s)
 }
