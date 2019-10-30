@@ -24,7 +24,7 @@ type Runtime struct {
 	Is64     bool     `json:"is64"`
 }
 
-type Runtimes []*Runtime
+type Runtimes []Runtime
 
 func (rs Runtimes) HasPlatform(platform Platform) bool {
 	for _, r := range rs {
@@ -35,7 +35,7 @@ func (rs Runtimes) HasPlatform(platform Platform) bool {
 	return false
 }
 
-func (r *Runtime) String() string {
+func (r Runtime) String() string {
 	var arch string
 	if r.Is64 {
 		arch = "64-bit"
@@ -55,7 +55,7 @@ func (r *Runtime) String() string {
 }
 
 // OS returns the operating system in GOOS format
-func (r *Runtime) OS() string {
+func (r Runtime) OS() string {
 	switch r.Platform {
 	case PlatformLinux:
 		return "linux"
@@ -69,20 +69,20 @@ func (r *Runtime) OS() string {
 }
 
 // Arch returns the architecture in GOARCH format
-func (r *Runtime) Arch() string {
+func (r Runtime) Arch() string {
 	if r.Is64 {
 		return "amd64"
 	}
 	return "386"
 }
 
-func (r *Runtime) Equals(other *Runtime) bool {
+func (r Runtime) Equals(other Runtime) bool {
 	return r.Is64 == other.Is64 && r.Platform == other.Platform
 }
 
 var cachedRuntime *Runtime
 
-func CurrentRuntime() *Runtime {
+func CurrentRuntime() Runtime {
 	if cachedRuntime == nil {
 		var is64 = is64Bit()
 		var platform Platform
@@ -102,7 +102,7 @@ func CurrentRuntime() *Runtime {
 			Platform: platform,
 		}
 	}
-	return cachedRuntime
+	return *cachedRuntime
 }
 
 var win64Arches = map[string]bool{

@@ -13,6 +13,7 @@ import (
 func Test_Preallocate(t *testing.T) {
 	assert := assert.New(t)
 	f, err := ioutil.TempFile("", "")
+	must(err)
 
 	assertSize := func(expected int64) {
 		s, err := f.Stat()
