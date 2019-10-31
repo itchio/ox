@@ -17,6 +17,7 @@ const (
 	FolderTypeAppData
 	FolderTypeLocalAppData
 	FolderTypeStartMenu
+	FolderTypePrograms
 )
 
 func GetFolderPath(folderType FolderType) (string, error) {
@@ -30,6 +31,8 @@ func GetFolderPath(folderType FolderType) (string, error) {
 		csidl = syscallex.CSIDL_LOCAL_APPDATA
 	case FolderTypeStartMenu:
 		csidl = syscallex.CSIDL_STARTMENU
+	case FolderTypePrograms:
+		csidl = syscallex.CSIDL_PROGRAMS
 	default:
 		return "", errors.Errorf("Unknown folder type: %d", folderType)
 	}

@@ -18,6 +18,7 @@ func Test_GetFolderPath(t *testing.T) {
 		tcase{name: "localAppData", typ: winox.FolderTypeLocalAppData},
 		tcase{name: "profile", typ: winox.FolderTypeProfile},
 		tcase{name: "startMenu", typ: winox.FolderTypeStartMenu},
+		tcase{name: "programs", typ: winox.FolderTypePrograms},
 	}
 
 	for _, cas := range cases {
