@@ -17,6 +17,7 @@ const (
 	CSIDL_APPDATA       = 0x001a
 	CSIDL_PROFILE       = 0x0028
 	CSIDL_LOCAL_APPDATA = 0x001c
+	CSIDL_STARTMENU     = 0x000b
 )
 
 const MAX_PATH = 260

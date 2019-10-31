@@ -8,10 +8,24 @@ import (
 )
 
 func Test_GetFolderPath(t *testing.T) {
-	{
-		s, err := winox.GetFolderPath(winox.FolderTypeProfile)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, s)
+	type tcase struct {
+		name string
+		typ  winox.FolderType
+	}
+
+	cases := []tcase{
+		tcase{name: "appData", typ: winox.FolderTypeAppData},
+		tcase{name: "localAppData", typ: winox.FolderTypeLocalAppData},
+		tcase{name: "profile", typ: winox.FolderTypeProfile},
+		tcase{name: "startMenu", typ: winox.FolderTypeStartMenu},
+	}
+
+	for _, cas := range cases {
+		t.Run(cas.name, func(t *testing.T) {
+			s, err := winox.GetFolderPath(cas.typ)
+			assert.NoError(t, err)
+			assert.NotEmpty(t, s)
+		})
 	}
 
 	{
