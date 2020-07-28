@@ -4,16 +4,19 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/itchio/ox"
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_Preallocate(t *testing.T) {
+func doTestPreallocate(t *testing.T) {
 	assert := assert.New(t)
 	f, err := ioutil.TempFile("", "")
 	must(err)
+	defer f.Close()
+	defer os.Remove(f.Name())
 
 	assertSize := func(expected int64) {
 		s, err := f.Stat()
@@ -44,6 +47,16 @@ func Test_Preallocate(t *testing.T) {
 	assert.Equal(5, n)
 
 	assert.Equal("hello", string(buf))
+}
+
+func Test_Preallocate(t *testing.T) {
+	t.Logf("With fallocate...")
+	ox.SIMULATE_FALLOCATE_NOT_SUPPORTED = true
+	doTestPreallocate(t)
+
+	t.Logf("Without fallocate...")
+	ox.SIMULATE_FALLOCATE_NOT_SUPPORTED = false
+	doTestPreallocate(t)
 }
 
 func must(err error) {

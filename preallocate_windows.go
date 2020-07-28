@@ -10,6 +10,9 @@ import (
 	"golang.org/x/sys/windows"
 )
 
+// Note: this does nothing on Windows
+var SIMULATE_FALLOCATE_NOT_SUPPORTED = false
+
 // Reserve `size` bytes of space for f, in the
 // quickest way possible. f must be opened with O_RDWR.
 func Preallocate(f *os.File, size int64) error {
