@@ -42,6 +42,7 @@ var (
 
 	procCreateProcessWithLogonW = modadvapi32.NewProc("CreateProcessWithLogonW")
 	procLogonUserW              = modadvapi32.NewProc("LogonUserW")
+	procImpersonateSelf         = modadvapi32.NewProc("ImpersonateSelf")
 	procImpersonateLoggedOnUser = modadvapi32.NewProc("ImpersonateLoggedOnUser")
 	procRevertToSelf            = modadvapi32.NewProc("RevertToSelf")
 	procLookupAccountNameW      = modadvapi32.NewProc("LookupAccountNameW")
@@ -118,6 +119,23 @@ func LogonUser(
 		uintptr(logonType),
 		uintptr(logonProvider),
 		uintptr(unsafe.Pointer(outToken)),
+	)
+	if r1 == 0 {
+		if e1 != 0 {
+			err = e1
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+func ImpersonateSelf(impersonationLevel int) (err error) {
+	r1, _, e1 := syscall.Syscall(
+		procImpersonateSelf.Addr(),
+		1,
+		uintptr(impersonationLevel),
+		0, 0,
 	)
 	if r1 == 0 {
 		if e1 != 0 {
