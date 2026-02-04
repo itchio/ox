@@ -1,7 +1,6 @@
 # ox
 
-[![build status](https://git.itch.ovh/itchio/ox/badges/master/build.svg)](https://git.itch.ovh/itchio/ox/commits/master)
-[![codecov](https://codecov.io/gh/itchio/ox/branch/master/graph/badge.svg)](https://codecov.io/gh/itchio/ox)
+[![Test](https://github.com/itchio/ox/actions/workflows/test.yml/badge.svg)](https://github.com/itchio/ox/actions/workflows/test.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/itchio/ox)](https://goreportcard.com/report/github.com/itchio/ox)
 [![GoDoc](https://godoc.org/github.com/itchio/ox?status.svg)](https://godoc.org/github.com/itchio/ox)
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/itchio/ox/blob/master/LICENSE)
