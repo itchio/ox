@@ -22,6 +22,7 @@ const (
 type Runtime struct {
 	Platform Platform `json:"platform"`
 	Is64     bool     `json:"is64"`
+	Architecture string `json:"arch,omitempty"` // "amd64", "arm64", "386", "arm"
 }
 
 type Runtimes []Runtime
@@ -70,6 +71,10 @@ func (r Runtime) OS() string {
 
 // Arch returns the architecture in GOARCH format
 func (r Runtime) Arch() string {
+	if r.Architecture != "" {
+		return r.Architecture
+	}
+	// Fallback for backwards compatibility with old cached values
 	if r.Is64 {
 		return "amd64"
 	}
@@ -84,7 +89,9 @@ var cachedRuntime *Runtime
 
 func CurrentRuntime() Runtime {
 	if cachedRuntime == nil {
-		var is64 = is64Bit()
+		arch := detectArch()
+		is64 := arch == "amd64" || arch == "arm64"
+
 		var platform Platform
 		switch runtime.GOOS {
 		case "linux":
@@ -98,62 +105,118 @@ func CurrentRuntime() Runtime {
 		}
 
 		cachedRuntime = &Runtime{
-			Is64:     is64,
-			Platform: platform,
+			Is64:         is64,
+			Platform:     platform,
+			Architecture: arch,
 		}
 	}
 	return *cachedRuntime
 }
 
-var win64Arches = map[string]bool{
-	"AMD64": true,
-	"IA64":  true,
+// archMapping maps OS-reported architecture names to GOARCH format
+var archMapping = map[string]string{
+	// x86_64
+	"x86_64": "amd64",
+	"AMD64":  "amd64",
+	"IA64":   "amd64",
+	// arm64
+	"arm64":   "arm64",
+	"aarch64": "arm64",
+	"ARM64":   "arm64",
+	// 32-bit x86
+	"i386": "386",
+	"i686": "386",
+	"x86":  "386",
+	// 32-bit arm
+	"armv7l": "arm",
+	"armv6l": "arm",
 }
 
-var hasDeterminedLinux64 = false
-var cachedIsLinux64 bool
+// MapArchitecture converts an OS-reported architecture name to GOARCH format.
+// Returns empty string if the architecture is not recognized.
+func MapArchitecture(osArch string) string {
+	return archMapping[osArch]
+}
 
-func is64Bit() bool {
+var hasDeterminedArch = false
+var cachedArch string
+
+func detectArch() string {
 	switch runtime.GOOS {
 	case "darwin":
-		// we don't ship for 32-bit mac
-		return true
+		return detectDarwinArch()
 	case "linux":
-		if !hasDeterminedLinux64 {
-			cachedIsLinux64 = determineLinux64()
-			hasDeterminedLinux64 = true
+		if !hasDeterminedArch {
+			cachedArch = detectLinuxArch()
+			hasDeterminedArch = true
 		}
-		return cachedIsLinux64
+		return cachedArch
 	case "windows":
-		// if we're currently running as a 64-bit executable then,
-		// yeah, we're on 64-bit windows
-		if runtime.GOARCH == "amd64" {
-			return true
-		}
-
-		// otherwise, check environment variables
-		// any value not in the map will return false (the zero value for bool ()
-		return win64Arches[os.Getenv("PROCESSOR_ARCHITECTURE")] ||
-			win64Arches[os.Getenv("PROCESSOR_ARCHITEW6432")]
+		return detectWindowsArch()
 	}
 
-	// unsupported platform eh :(
-	return false
+	// unsupported platform - fall back to compile-time arch
+	return runtime.GOARCH
 }
 
-func determineLinux64() bool {
-	unameOutput, err := exec.Command("uname", "-m").Output()
+func detectDarwinArch() string {
+	// Check for Apple Silicon - sysctl returns "1" on ARM Macs even under Rosetta
+	output, err := exec.Command("sysctl", "-n", "hw.optional.arm64").Output()
+	if err == nil && strings.TrimSpace(string(output)) == "1" {
+		return "arm64"
+	}
+	// Fall back to uname for older Intel Macs
+	output, err = exec.Command("uname", "-m").Output()
 	if err == nil {
-		return strings.TrimSpace(string(unameOutput)) == "x86_64"
+		machine := strings.TrimSpace(string(output))
+		if arch, ok := archMapping[machine]; ok {
+			return arch
+		}
+	}
+	return runtime.GOARCH
+}
+
+func detectLinuxArch() string {
+	output, err := exec.Command("uname", "-m").Output()
+	if err == nil {
+		machine := strings.TrimSpace(string(output))
+		if arch, ok := archMapping[machine]; ok {
+			return arch
+		}
 	}
 
-	archOutput, err := exec.Command("arch").Output()
+	output, err = exec.Command("arch").Output()
 	if err == nil {
-		return strings.TrimSpace(string(archOutput)) == "x86_64"
+		machine := strings.TrimSpace(string(output))
+		if arch, ok := archMapping[machine]; ok {
+			return arch
+		}
 	}
 
-	// if we're lacking uname AND arch, honestly, our chances are slim.
-	// but in doubt, let's just assume the architecture of the current binary is the
-	// same as the os
-	return runtime.GOARCH == "amd64"
+	// Fall back to compile-time arch
+	return runtime.GOARCH
+}
+
+func detectWindowsArch() string {
+	// If we're running as a 64-bit executable, check what kind
+	if runtime.GOARCH == "amd64" || runtime.GOARCH == "arm64" {
+		return runtime.GOARCH
+	}
+
+	// 32-bit binary running on potentially 64-bit OS - check env vars
+	// PROCESSOR_ARCHITEW6432 is set when a 32-bit process runs on 64-bit Windows
+	if archEnv := os.Getenv("PROCESSOR_ARCHITEW6432"); archEnv != "" {
+		if arch, ok := archMapping[archEnv]; ok {
+			return arch
+		}
+	}
+
+	if archEnv := os.Getenv("PROCESSOR_ARCHITECTURE"); archEnv != "" {
+		if arch, ok := archMapping[archEnv]; ok {
+			return arch
+		}
+	}
+
+	// Fall back to compile-time arch
+	return runtime.GOARCH
 }
