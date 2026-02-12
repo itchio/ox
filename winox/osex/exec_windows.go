@@ -2,9 +2,7 @@ package osex
 
 import (
 	"os"
-	"reflect"
-	"runtime"
-	"unsafe"
+	"syscall"
 
 	"github.com/itchio/ox/syscallex"
 )
@@ -72,22 +70,21 @@ func startProcessWithLogon(name string, argv []string, username string, domain s
 	if e != nil {
 		return nil, &os.PathError{"fork/exec", name, e}
 	}
-	return newProcess(pid, h), nil
-}
 
-func newProcess(pid int, handle uintptr) *os.Process {
-	p := &os.Process{Pid: pid}
+	// Historically we returned *os.Process by constructing os.Process{Pid: pid}
+	// and writing the private `handle` field via reflection/unsafe so Wait/Kill
+	// used the CreateProcessWithLogon handle directly. Go 1.24 changed
+	// os.Process internals, so that hack is no longer valid. Re-open by PID
+	// using the supported API and close our raw handle unless the caller
+	// explicitly requested it through SysProcAttr.ProcessHandle.
+	p, err = os.FindProcess(pid)
+	if err != nil {
+		syscall.CloseHandle(syscall.Handle(h))
+		return nil, &os.PathError{"findprocess", name, err}
+	}
 
-	//     /!\  Danger zone  /!\
-	// set private field handle via reflection
-	// see: https://stackoverflow.com/a/17982725
-	pointerVal := reflect.ValueOf(p)
-	val := reflect.Indirect(pointerVal)
-	member := val.FieldByName("handle")
-	ptrToHandle := unsafe.Pointer(member.UnsafeAddr())
-	realPtrToHandle := (*uintptr)(ptrToHandle)
-	*realPtrToHandle = handle
-
-	runtime.SetFinalizer(p, (*os.Process).Release)
-	return p
+	if attr == nil || attr.Sys == nil || attr.Sys.ProcessHandle == 0 {
+		syscall.CloseHandle(syscall.Handle(h))
+	}
+	return p, nil
 }

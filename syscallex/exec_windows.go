@@ -251,8 +251,13 @@ func StartProcessWithLogon(argv0 string, argv []string, username string, domain 
 			return 0, 0, err
 		}
 	}
-	attr.Sys.ThreadHandle = syscall.Handle(pi.Thread)
-	attr.Sys.ProcessHandle = syscall.Handle(pi.Process)
+	if attr.Sys != nil {
+		attr.Sys.ThreadHandle = syscall.Handle(pi.Thread)
+		attr.Sys.ProcessHandle = syscall.Handle(pi.Process)
+	} else {
+		// Avoid leaking the thread handle when caller did not request handles.
+		syscall.CloseHandle(syscall.Handle(pi.Thread))
+	}
 
 	return int(pi.ProcessId), uintptr(pi.Process), nil
 }
