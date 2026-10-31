@@ -15,6 +15,7 @@ const (
 	PlatformOSX     Platform = "osx"
 	PlatformWindows Platform = "windows"
 	PlatformLinux   Platform = "linux"
+	PlatformAndroid Platform = "android"
 	PlatformUnknown Platform = "unknown"
 )
 
@@ -51,6 +52,8 @@ func (r Runtime) String() string {
 		platform = "macOS"
 	case PlatformWindows:
 		platform = "Windows"
+	case PlatformAndroid:
+		platform = "Android"
 	}
 	return fmt.Sprintf("%s %s", arch, platform)
 }
@@ -64,6 +67,8 @@ func (r Runtime) OS() string {
 		return "darwin"
 	case PlatformWindows:
 		return "windows"
+	case PlatformAndroid:
+		return "android"
 	default:
 		return "unknown"
 	}
@@ -100,6 +105,8 @@ func CurrentRuntime() Runtime {
 			platform = PlatformOSX
 		case "windows":
 			platform = PlatformWindows
+		case "android":
+			platform = PlatformAndroid
 		default:
 			platform = PlatformUnknown
 		}

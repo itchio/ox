@@ -95,6 +95,7 @@ func TestRuntime_OS(t *testing.T) {
 		{ox.PlatformLinux, "linux"},
 		{ox.PlatformOSX, "darwin"},
 		{ox.PlatformWindows, "windows"},
+		{ox.PlatformAndroid, "android"},
 		{ox.PlatformUnknown, "unknown"},
 	}
 
@@ -118,6 +119,7 @@ func TestRuntime_String(t *testing.T) {
 		{ox.Runtime{Platform: ox.PlatformWindows, Is64: false}, "32-bit Windows"},
 		{ox.Runtime{Platform: ox.PlatformLinux, Is64: true}, "64-bit Linux"},
 		{ox.Runtime{Platform: ox.PlatformLinux, Is64: false}, "32-bit Linux"},
+		{ox.Runtime{Platform: ox.PlatformAndroid, Is64: true}, "64-bit Android"},
 		{ox.Runtime{Platform: ox.PlatformUnknown, Is64: true}, "64-bit Unknown"},
 	}
 
